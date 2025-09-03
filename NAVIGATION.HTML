@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geo Navigation with Google Maps</title>
+    <style>
+        #map { height: 400px; width: 100%; }
+    </style>
+</head>
+<body>
+    <h1>Navigate to Custom Location</h1>
+    <p id="status">Loading...</p>
+    <button onclick="getLocation()">Start Navigation</button>
+    <div id="map"></div>
+    <script>
+const TARGET_LAT = 30.171009
+const TARGET_LON = -99.981728
+let map, directionsService, directionsRenderer;
+
+function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: TARGET_LAT, lng: TARGET_LON },
+        zoom: 13,
+    });
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer();
+    directionsRenderer.setMap(map);
+
+    // Add marker for target location
+    new google.maps.Marker({
+        position: { lat: TARGET_LAT, lng: TARGET_LON },
+        map: map,
+        title: "Target Location",
+    });
+}
+
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition, showError);
+    } else {
+        document.getElementById("status").innerHTML = "Geolocation not supported.";
+    }
+}
+
+function showPosition(position) {
+    const currentLat = position.coords.latitude;
+    const currentLon = position.coords.longitude;
+
+    // Add user marker
+    new google.maps.Marker({
+        position: { lat: currentLat, lng: currentLon },
+        map: map,
+        title: "Your Location",
+    });
+
+    // Calculate driving route
+    directionsService.route({
+        origin: { lat: currentLat, lng: currentLon },
+        destination: { lat: TARGET_LAT, lng: TARGET_LON },
+        travelMode: google.maps.TravelMode.DRIVING,
+    }, (response, status) => {
+        if (status === "OK") {
+            directionsRenderer.setDirections(response);
+            const distance = response.routes[0].legs[0].distance.text;
+            const duration = response.routes[0].legs[0].duration.text;
+            document.getElementById("status").innerHTML = `Distance: ${distance}, Estimated time: ${duration}`;
+        } else {
+            document.getElementById("status").innerHTML = "Directions request failed: " + status;
+        }
+    });
+
+    // Adjust map to show both points
+    map.setCenter({
+        lat: (currentLat + TARGET_LAT) / 2,
+        lng: (currentLon + TARGET_LON) / 2,
+    });
+}
+
+function showError(error) {
+    document.getElementById("status").innerHTML = "Error: " + error.message;
+    </script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVVuKu0aO_IM2_V2NjC91lVoIYq3VNP9c&callback=initMap">
+    </script>
+</body>
+</html>
